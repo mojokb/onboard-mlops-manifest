@@ -8,6 +8,6 @@ spec:
       containers:
       - name: pi
         image: perl
-        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(500)"]
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(100)"]
       restartPolicy: Never
   backoffLimit: 4
