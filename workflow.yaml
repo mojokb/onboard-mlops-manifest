@@ -10,7 +10,7 @@ spec:
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
-        requests:ß
+        requests:
           storage: 1Gi     
   templates:
   - name: git
