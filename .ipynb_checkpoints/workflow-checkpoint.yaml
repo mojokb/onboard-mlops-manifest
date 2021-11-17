@@ -12,7 +12,7 @@ spec:
       - name: remote_repo
     container:
       image: brightfly/workflow:git
-      command: ["git", "clone",  "-b", "{inputs.parameters.branch}", "{inputs.parameters.remote_repo}"]
+      command: ["git", "clone",  "-b", "{{inputs.parameters.branch}}", "{{inputs.parameters.remote_repo}}"]
   - name: containerize   
     dag:
       tasks:
