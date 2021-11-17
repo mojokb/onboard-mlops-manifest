@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-test-8
+  name: dag-model-serving-test-9
 spec:
   entrypoint: model-repo-pull             # 시작점 위치
   volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
@@ -20,6 +20,9 @@ spec:
     container:
       image: alpine:latest
       command: ["ls", "-al", "{{inputs.parameters.path}}"]
+      volumeMounts:                     # same syntax as k8s Pod spec
+      - name: workdir
+        mountPath: /workdir      
     
   - name: git-template
     inputs:
