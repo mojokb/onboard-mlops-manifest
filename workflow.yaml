@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-test-4
+  name: dag-model-serving-test-5
 spec:
   entrypoint: model-repo-pull             # 시작점 위치
   volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
@@ -28,8 +28,8 @@ spec:
     container:
       image: brightfly/workflow:git
       command: [sh, -c]
-      #args: ["cd /workdir | dvc pull"]
-      args: ["ls /workdir"]
+      args: ["cd /workdir && dvc pull"]
+      #args: ["ls /workdir"]
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
