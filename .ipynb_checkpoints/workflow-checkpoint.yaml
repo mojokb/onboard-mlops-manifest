@@ -1,9 +1,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-test-1
+  name: dag-model-serving-test-2
 spec:
-  entrypoint: model_repo_pull             # 시작점 위치
+  entrypoint: model-repo-pull             # 시작점 위치
   volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
   - metadata:
       name: workdir                     # name of volume claim
