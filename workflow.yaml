@@ -28,7 +28,8 @@ spec:
     container:
       image: brightfly/workflow:git
       command: [sh, -c]
-      args: ["cd /workdir | dvc pull"]
+      #args: ["cd /workdir | dvc pull"]
+      args: ["ls /workdir"]
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
