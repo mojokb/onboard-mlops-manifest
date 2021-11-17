@@ -32,7 +32,7 @@ spec:
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
-  - name: model_to_serve
+  - name: model-to-serve
     dag:
       tasks:
       - name: git-pull            
