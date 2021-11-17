@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-test-6
+  name: dag-model-serving-test-7
 spec:
   entrypoint: model-repo-pull             # 시작점 위치
   volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
@@ -43,7 +43,7 @@ spec:
 
   - name: bentoml-pack-template
     container:
-      image: brightfly/workflow:bentoml
+      image: brightfly/workflow:bentoml.torch
       command: [sh, -c]
       args: ["cp /root/*.py /workdir && cd /workdir && python bento_pack.py"]
       volumeMounts:                     # same syntax as k8s Pod spec
