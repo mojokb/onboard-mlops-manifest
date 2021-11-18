@@ -55,6 +55,7 @@ spec:
   - name: kaniko-template
     container: 
       image: gcr.io/kaniko-project/executor
+      command: [/kaniko/executor]
       args: 
       - "--context=/workdir/bentoml"
       - "--destination=192.168.64.5:30000/torch:serving"
