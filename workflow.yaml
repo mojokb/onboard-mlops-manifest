@@ -54,9 +54,7 @@ spec:
         mountPath: /workdir
   - name: kaniko-template
     container: gcr.io/kaniko-project/executor
-      args:
-      - "--context=/workdir/bentoml"
-      - "--destination=192.168.64.5:30000/torch:serving"
+      args: ["--context=/workdir/bentoml", "--destination=192.168.64.5:30000/torch:serving"]
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
