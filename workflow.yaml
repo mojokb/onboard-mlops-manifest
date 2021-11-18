@@ -52,6 +52,14 @@ spec:
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
+  - name: kaniko-template
+    container: gcr.io/kaniko-project/executor
+      args:
+      - "--context=/workdir/bentoml"
+      - "--destination=192.168.64.5:30000/torch:serving
+      volumeMounts:                     # same syntax as k8s Pod spec
+      - name: workdir
+        mountPath: /workdir
 
   - name: model-repo-pull
     dag:
@@ -71,5 +79,8 @@ spec:
         template: ls-template
         arguments:  
           parameters: [{name: path, value: "/workdir/bentoml"}]
+      - name: containerize
+        dependencies: [bentoml-packing-model]
+        template: kaniko-template
         
       
