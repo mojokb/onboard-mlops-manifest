@@ -1,5 +1,6 @@
-nameSuffix: "-001"  # maybe replace ssh
-resources:
-- workflow.yaml
-patchesStrategicMerge:
-- patch.yaml
+  nameSuffix: "13a66d1f4a6fa60948832ff318ec601527d2a759"  # maybe replace ssh
+  resources:
+  - workflow.yaml
+  patchesStrategicMerge:
+  - patch.yaml        
+EOF    

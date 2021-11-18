@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-001
+  name: dag-model-serving13a66d1f4a6fa60948832ff318ec601527d2a759
 spec:
   arguments:
     parameters:
