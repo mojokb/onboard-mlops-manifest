@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-test-11
+  name: dag-model-serving-test-12
 spec:
   entrypoint: model-repo-pull             # 시작점 위치
   arguments:
