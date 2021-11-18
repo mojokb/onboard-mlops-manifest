@@ -1,0 +1,105 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-model-serving-001
+spec:
+  arguments:
+    parameters:
+    - name: branch
+      value: train/211111
+    - name: remote_repo
+      value: https://github.com/mojokb/onboard-mlops-model.git
+    - name: workdir_path
+      value: /workdir
+    - name: context_path
+      value: /workdir/bentoml
+    - name: image
+      value: 192.168.64.5:30000/torch:serving
+  entrypoint: model-repo-pull
+  templates:
+  - container:
+      command:
+      - ls
+      - -al
+      - '{{workflow.parameters.context_path}}'
+      image: alpine:latest
+      volumeMounts:
+      - mountPath: /workdir
+        name: workdir
+    name: ls-template
+  - container:
+      command:
+      - git
+      - clone
+      - -b
+      - '{{workflow.parameters.branch}}'
+      - '{{workflow.parameters.remote_repo}}'
+      - '{{workflow.parameters.workdir_path}}'
+      image: brightfly/workflow:git
+      volumeMounts:
+      - mountPath: /workdir
+        name: workdir
+    name: git-template
+  - container:
+      args:
+      - cd /workdir && dvc pull
+      command:
+      - sh
+      - -c
+      image: brightfly/workflow:git
+      volumeMounts:
+      - mountPath: /workdir
+        name: workdir
+    name: dvc-template
+  - container:
+      args:
+      - cp /root/*.py /workdir && cd /workdir && python bento_pack.py
+      command:
+      - sh
+      - -c
+      image: brightfly/workflow:bentoml.torch
+      volumeMounts:
+      - mountPath: /workdir
+        name: workdir
+    name: bentoml-pack-template
+  - container:
+      args:
+      - --context={{workflow.parameters.context_path}}
+      - --destination={{workflow.parameters.image}}
+      command:
+      - /kaniko/executor
+      image: gcr.io/kaniko-project/executor
+      volumeMounts:
+      - mountPath: /workdir
+        name: workdir
+    name: kaniko-template
+  - dag:
+      tasks:
+      - name: git-pull
+        template: git-template
+      - dependencies:
+        - git-pull
+        name: dvc-pull
+        template: dvc-template
+      - dependencies:
+        - dvc-pull
+        name: bentoml-packing-model
+        template: bentoml-pack-template
+      - dependencies:
+        - bentoml-packing-model
+        name: list-model-pack
+        template: ls-template
+      - dependencies:
+        - bentoml-packing-model
+        name: containerize
+        template: kaniko-template
+    name: model-repo-pull
+  volumeClaimTemplates:
+  - metadata:
+      name: workdir
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
