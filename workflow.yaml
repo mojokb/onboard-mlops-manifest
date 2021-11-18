@@ -4,6 +4,18 @@ metadata:
   name: dag-model-serving-test-11
 spec:
   entrypoint: model-repo-pull             # 시작점 위치
+  arguments:
+    parameters:
+      - name: branch
+        value: "train/211110"
+      - name: remote_repo
+        value: "https://github.com/mojokb/onboard-mlops-model.git"
+      - name: workdir_path
+        value: "/workdir"
+      - name: context_path
+        value: "/workdir/bentoml"
+      - name: image
+        value: "192.168.64.5:30000/torch:serving"
   volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
   - metadata:
       name: workdir                     # name of volume claim
@@ -19,7 +31,7 @@ spec:
       - name: path
     container:
       image: alpine:latest
-      command: ["ls", "-al", "{{inputs.parameters.path}}"]
+      command: ["ls", "-al", "{{workflow.parameters.context_path}}"]
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir      
@@ -31,7 +43,7 @@ spec:
       - name: remote_repo
     container:
       image: brightfly/workflow:git
-      command: ["git", "clone",  "-b", "{{inputs.parameters.branch}}", "{{inputs.parameters.remote_repo}}", "/workdir"]
+      command: ["git", "clone",  "-b", "{{workflow.parameters.branch}}", "{{workflow.parameters.remote_repo}}", "{{workflow.parameters.workdir_path}}"]
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
@@ -57,8 +69,8 @@ spec:
       image: gcr.io/kaniko-project/executor
       command: [/kaniko/executor]
       args: 
-      - "--context=/workdir/bentoml"
-      - "--destination=192.168.64.5:30000/torch:serving"
+      - "--context={{workflow.parameters.context_path}}"
+      - "--destination={{workflow.parameters.image}}"
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
@@ -68,8 +80,6 @@ spec:
       tasks:
       - name: git-pull            
         template: git-template
-        arguments:                
-          parameters: [{name: branch, value: "train/211110"}, {name: remote_repo, value: "https://github.com/mojokb/onboard-mlops-model.git"}]
       - name: dvc-pull
         template: dvc-template
         dependencies: [git-pull]
@@ -79,8 +89,6 @@ spec:
       - name: list-model-pack
         dependencies: [bentoml-packing-model]
         template: ls-template
-        arguments:  
-          parameters: [{name: path, value: "/workdir/bentoml"}]
       - name: containerize
         dependencies: [bentoml-packing-model]
         template: kaniko-template
