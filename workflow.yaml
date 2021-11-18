@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-test-12
+  name: dag-model-serving-test-13
 spec:
   entrypoint: model-repo-pull             # 시작점 위치
   arguments:
@@ -26,9 +26,6 @@ spec:
           storage: 1Gi     
   templates:
   - name: ls-template
-    inputs:
-      parameters:
-      - name: path
     container:
       image: alpine:latest
       command: ["ls", "-al", "{{workflow.parameters.context_path}}"]
@@ -37,10 +34,6 @@ spec:
         mountPath: /workdir      
     
   - name: git-template
-    inputs:
-      parameters:
-      - name: branch
-      - name: remote_repo
     container:
       image: brightfly/workflow:git
       command: ["git", "clone",  "-b", "{{workflow.parameters.branch}}", "{{workflow.parameters.remote_repo}}", "{{workflow.parameters.workdir_path}}"]
