@@ -17,7 +17,7 @@ spec:
       command:
       - ls
       - -al
-      - '{{input.parameters.path}}'
+      - '{{inputs.parameters.path}}'
       image: alpine:latest
       volumeMounts:
       - mountPath: /workdir
