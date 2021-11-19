@@ -27,8 +27,8 @@ spec:
       - name: path
     container:
       image: alpine:latest
-      command: [tree]
-      args: ["-L", "2", "-N", "{{inputs.parameters.path}}"]
+      command: [ls]
+      args: ["-R", "{{inputs.parameters.path}}"]
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir      
