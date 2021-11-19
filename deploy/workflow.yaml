@@ -17,11 +17,14 @@ spec:
       command:
       - ls
       - -al
-      - '{{workflow.parameters.context_path}}'
+      - '{{input.parameters.path}}'
       image: alpine:latest
       volumeMounts:
       - mountPath: /workdir
         name: workdir
+    inputs:
+      parameters:
+      - name: path
     name: ls-template
   - container:
       command:
@@ -30,7 +33,7 @@ spec:
       - -b
       - '{{workflow.parameters.branch}}'
       - '{{workflow.parameters.remote_repo}}'
-      - '{{workflow.parameters.workdir_path}}'
+      - /workdir
       image: brightfly/workflow:git
       volumeMounts:
       - mountPath: /workdir
@@ -60,7 +63,7 @@ spec:
     name: bentoml-pack-template
   - container:
       args:
-      - --context={{workflow.parameters.context_path}}
+      - --context=/workdir/bentoml
       - --destination={{workflow.parameters.image}}
       command:
       - /kaniko/executor
@@ -81,7 +84,11 @@ spec:
         - dvc-pull
         name: bentoml-packing-model
         template: bentoml-pack-template
-      - dependencies:
+      - arguments:
+          parameters:
+            name: path
+            value: /workdir/bentoml
+        dependencies:
         - bentoml-packing-model
         name: list-model-pack
         template: ls-template
