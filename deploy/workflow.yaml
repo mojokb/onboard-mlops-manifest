@@ -86,7 +86,7 @@ spec:
         template: bentoml-pack-template
       - arguments:
           parameters:
-            name: path
+          - name: path
             value: /workdir/bentoml
         dependencies:
         - bentoml-packing-model

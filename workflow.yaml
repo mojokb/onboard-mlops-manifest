@@ -80,9 +80,7 @@ spec:
         dependencies: [bentoml-packing-model]
         template: ls-template
         arguments:
-          parameters:
-            name: path
-            value: /workdir/bentoml
+          parameters: [{name: path, value: "/workdir/bentoml"}]
       - name: containerize
         dependencies: [bentoml-packing-model]
         template: kaniko-template
