@@ -1,23 +1,24 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-test-1
+  name: dag-model-serving-5cfc46916655bc615fab6f8ff051bfeea8805729
 spec:
   arguments:
     parameters:
     - name: branch
-      value: train/20211117
+      value: train/2021-1119
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:test
+      value: 192.168.64.5:30000/bentoml-torch:5cfc46916655bc615fab6f8ff051bfeea8805729
   entrypoint: model-repo-pull
   templates:
   - container:
+      args:
+      - -R
+      - '{{inputs.parameters.path}}'
       command:
       - ls
-      - -al
-      - '{{inputs.parameters.path}}'
       image: alpine:latest
       volumeMounts:
       - mountPath: /workdir
