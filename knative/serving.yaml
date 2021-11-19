@@ -1,0 +1,10 @@
+apiVersion: serving.knative.dev/v1 
+kind: Service
+metadata:
+  name: serving-test
+  namespace: default # The namespace the app will use
+spec:
+  template:
+    spec:
+      containers:
+        - image: 192.168.64.5:30000/bentoml-torch:008e03f89fb24b57f5e2ac53160affba58904736
