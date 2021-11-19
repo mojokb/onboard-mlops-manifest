@@ -27,7 +27,8 @@ spec:
       - name: path
     container:
       image: alpine:latest
-      command: ["ls -R {{inputs.parameters.path}} | sed -e 's/:$//' -e 's/[^-][^\/]*\//--/g' -e 's/^/ /' -e 's/-/|/'"]
+      command: [tree]
+      args: ["-L", "2", "-N", "{{inputs.parameters.path}}"]
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir      
