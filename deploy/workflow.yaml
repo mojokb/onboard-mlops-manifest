@@ -15,19 +15,6 @@ spec:
   templates:
   - container:
       command:
-      - ls
-      - -al
-      - '{{inputs.parameters.path}}'
-      image: alpine:latest
-      volumeMounts:
-      - mountPath: /workdir
-        name: workdir
-    inputs:
-      parameters:
-      - name: path
-    name: ls-template
-  - container:
-      command:
       - git
       - clone
       - -b
@@ -84,14 +71,6 @@ spec:
         - dvc-pull
         name: bentoml-packing-model
         template: bentoml-pack-template
-      - arguments:
-          parameters:
-          - name: path
-            value: /workdir/bentoml
-        dependencies:
-        - bentoml-packing-model
-        name: list-model-pack
-        template: ls-template
       - dependencies:
         - bentoml-packing-model
         name: containerize
