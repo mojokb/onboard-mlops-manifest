@@ -10,5 +10,5 @@
           - name: remote_repo
             value: "https://github.com/mojokb/onboard-mlops-model.git"
           - name: image
-            value: "192.168.64.5:30000/bentoml-torch:5cfc46916655bc615fab6f8ff051bfeea8805729"        
+            value: "192.168.64.5:30000/bentoml-torch:edb342cbb828f58c1314ec94c4d038efcaa5b3a0"        
 EOF    
