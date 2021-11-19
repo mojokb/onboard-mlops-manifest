@@ -10,10 +10,6 @@ spec:
         value: "train/211110"
       - name: remote_repo
         value: "https://github.com/mojokb/onboard-mlops-model.git"
-      - name: workdir_path
-        value: "/workdir"
-      - name: context_path
-        value: "/workdir/bentoml"
       - name: image
         value: "192.168.64.5:30000/torch:serving"
   volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
@@ -26,17 +22,19 @@ spec:
           storage: 1Gi     
   templates:
   - name: ls-template
+    inputs:
+      parameters:
+      - name: path
     container:
       image: alpine:latest
-      command: ["ls", "-al", "{{workflow.parameters.context_path}}"]
+      command: ["ls", "-al", "{{input.parameters.path}}"]
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir      
-    
   - name: git-template
     container:
       image: brightfly/workflow:git
-      command: ["git", "clone",  "-b", "{{workflow.parameters.branch}}", "{{workflow.parameters.remote_repo}}", "{{workflow.parameters.workdir_path}}"]
+      command: ["git", "clone",  "-b", "{{workflow.parameters.branch}}", "{{workflow.parameters.remote_repo}}", "/workdir"]
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
@@ -48,7 +46,6 @@ spec:
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
-
   - name: bentoml-pack-template
     container:
       image: brightfly/workflow:bentoml.torch
@@ -62,7 +59,7 @@ spec:
       image: gcr.io/kaniko-project/executor
       command: [/kaniko/executor]
       args: 
-      - "--context={{workflow.parameters.context_path}}"
+      - "--context=/workdir/bentoml"
       - "--destination={{workflow.parameters.image}}"
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
@@ -82,6 +79,10 @@ spec:
       - name: list-model-pack
         dependencies: [bentoml-packing-model]
         template: ls-template
+        arguments:
+          parameters:
+            name: path
+            value: /workdir/bentoml
       - name: containerize
         dependencies: [bentoml-packing-model]
         template: kaniko-template
