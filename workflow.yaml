@@ -31,18 +31,11 @@ spec:
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir      
-  - name: git-template
-    container:
-      image: brightfly/workflow:git
-      command: ["git", "clone",  "-b", "{{workflow.parameters.branch}}", "{{workflow.parameters.remote_repo}}", "/workdir"]
-      volumeMounts:                     # same syntax as k8s Pod spec
-      - name: workdir
-        mountPath: /workdir
-  - name: dvc-template
+  - name: gitdvc-template
     container:
       image: brightfly/workflow:git
       command: [sh, -c]
-      args: ["cd /workdir && dvc pull"]
+      args: ["git clone -b {{workflow.parameters.branch}} {{workflow.parameters.remote_repo}} /workdir && cd /workdir && dvc pull"]
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
@@ -64,18 +57,14 @@ spec:
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
-
   - name: model-repo-pull
     dag:
       tasks:
-      - name: git-pull            
-        template: git-template
-      - name: dvc-pull
-        template: dvc-template
-        dependencies: [git-pull]
+      - name: gitdvc-pull            
+        template: gitdvc-template
       - name: bentoml-packing-model
         template: bentoml-pack-template
-        dependencies: [dvc-pull]
+        dependencies: [gitdvc-pull]
       - name: list-model-pack
         dependencies: [bentoml-packing-model]
         template: ls-template
@@ -84,5 +73,3 @@ spec:
       - name: containerize
         dependencies: [bentoml-packing-model]
         template: kaniko-template
-        
-      

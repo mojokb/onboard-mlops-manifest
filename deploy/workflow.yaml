@@ -15,20 +15,21 @@ spec:
   templates:
   - container:
       command:
-      - git
-      - clone
-      - -b
-      - '{{workflow.parameters.branch}}'
-      - '{{workflow.parameters.remote_repo}}'
-      - /workdir
-      image: brightfly/workflow:git
+      - ls
+      - -al
+      - '{{inputs.parameters.path}}'
+      image: alpine:latest
       volumeMounts:
       - mountPath: /workdir
         name: workdir
-    name: git-template
+    inputs:
+      parameters:
+      - name: path
+    name: ls-template
   - container:
       args:
-      - cd /workdir && dvc pull
+      - git clone -b {{workflow.parameters.branch}} {{workflow.parameters.remote_repo}}
+        /workdir && cd /workdir && dvc pull
       command:
       - sh
       - -c
@@ -36,7 +37,7 @@ spec:
       volumeMounts:
       - mountPath: /workdir
         name: workdir
-    name: dvc-template
+    name: gitdvc-template
   - container:
       args:
       - cp /root/*.py /workdir && cd /workdir && python bento_pack.py
@@ -61,16 +62,20 @@ spec:
     name: kaniko-template
   - dag:
       tasks:
-      - name: git-pull
-        template: git-template
+      - name: gitdvc-pull
+        template: gitdvc-template
       - dependencies:
-        - git-pull
-        name: dvc-pull
-        template: dvc-template
-      - dependencies:
-        - dvc-pull
+        - gitdvc-pull
         name: bentoml-packing-model
         template: bentoml-pack-template
+      - arguments:
+          parameters:
+          - name: path
+            value: /workdir/bentoml
+        dependencies:
+        - bentoml-packing-model
+        name: list-model-pack
+        template: ls-template
       - dependencies:
         - bentoml-packing-model
         name: containerize
