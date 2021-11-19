@@ -53,6 +53,7 @@ spec:
       image: gcr.io/kaniko-project/executor
       command: [/kaniko/executor]
       args: 
+      - "--cache=true"
       - "--context=/workdir/bentoml"
       - "--destination={{workflow.parameters.image}}"
       volumeMounts:                     # same syntax as k8s Pod spec
