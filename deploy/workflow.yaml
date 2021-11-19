@@ -10,7 +10,7 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:008e03f89fb24b57f5e2ac53160affba58904736
+      value: 192.168.64.5:30000/bentoml-torch:test
   entrypoint: model-repo-pull
   templates:
   - container:
