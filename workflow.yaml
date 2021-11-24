@@ -12,6 +12,11 @@ spec:
         value: "https://github.com/mojokb/onboard-mlops-model.git"
       - name: image
         value: "192.168.64.5:30000/torch:serving"
+  podGC:
+    strategy: OnWorkflowCompletion
+    labelSelector:
+      matchLabels:
+        should-be-deleted: "true"        
   volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
   - metadata:
       name: workdir                     # name of volume claim
@@ -22,6 +27,9 @@ spec:
           storage: 1Gi     
   templates:
   - name: ls-template
+    metadata:
+      labels:
+        should-be-deleted: "true"    
     inputs:
       parameters:
       - name: path
@@ -33,6 +41,9 @@ spec:
       - name: workdir
         mountPath: /workdir      
   - name: gitdvc-template
+    metadata:
+      labels:
+        should-be-deleted: "true"    
     container:
       image: brightfly/workflow:git
       command: [sh, -c]
@@ -41,6 +52,9 @@ spec:
       - name: workdir
         mountPath: /workdir
   - name: bentoml-pack-template
+    metadata:
+      labels:
+        should-be-deleted: "true"
     container:
       image: brightfly/workflow:bentoml.torch
       command: [sh, -c]
@@ -49,6 +63,9 @@ spec:
       - name: workdir
         mountPath: /workdir
   - name: kaniko-template
+    metadata:
+      labels:
+        should-be-deleted: "true"
     container: 
       image: gcr.io/kaniko-project/executor
       command: [/kaniko/executor]
