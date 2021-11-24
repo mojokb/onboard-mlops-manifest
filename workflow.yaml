@@ -84,12 +84,11 @@ spec:
       image: brightfly/workflow:bentoml.torch
       command: [python]
       source: |
-        import os
-        os.chdir("/workdir")
         from test import TestModel
         test_model = TestModel()
         test_model.load_model("/workdir/model/model.pt")
         print(test_model.test())       
+      workingDir: /workdir  
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
