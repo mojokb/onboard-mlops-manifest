@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-030ee9913ba432f51c8d6302f8ca83ddbd51af4c
+  name: dag-model-serving-7df6c35c0b8a53db9015f8885a2d9b967a7de5c8
 spec:
   arguments:
     parameters:
@@ -10,7 +10,7 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:030ee9913ba432f51c8d6302f8ca83ddbd51af4c
+      value: 192.168.64.5:30000/bentoml-torch:7df6c35c0b8a53db9015f8885a2d9b967a7de5c8
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
@@ -79,14 +79,33 @@ spec:
       labels:
         should-be-deleted: "true"
     name: kaniko-template
+  - metadata:
+      labels:
+        should-be-deleted: "true"
+    name: test-model
+    script:
+      command:
+      - python
+      image: brightfly/workflow:bentoml.torch
+      source: "import os\nos.chdir(\"/workdir\")\nfrom test import TestModel\ntest_model
+        = TestModel()\ntest_model.load_model(\"/workdir/model/model.pt\")\nprint(test_model.test())
+        \      \n"
+      volumeMounts:
+      - mountPath: /workdir
+        name: workdir
   - dag:
       tasks:
       - name: gitdvc-pull
         template: gitdvc-template
       - dependencies:
         - gitdvc-pull
+        name: test-model
+        template: test-model
+      - dependencies:
+        - test-model
         name: bentoml-packing-model
         template: bentoml-pack-template
+        when: '{{tasks.test-model.outputs.result}} > 0.90'
       - arguments:
           parameters:
           - name: path
