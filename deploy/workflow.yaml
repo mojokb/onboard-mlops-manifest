@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-6cee7ec0ea39e756787750ccfd2b9b4b27197b54
+  name: dag-model-serving-scripte-test1
 spec:
   arguments:
     parameters:
@@ -85,9 +85,12 @@ spec:
     name: test-model
     script:
       command:
-      - ls
-      args:
-      - /workdir
+      - python
+      source: |
+        import os
+        print(os.getcwd())
+        os.chdir("/workdir")        
+        print(os.getcwd())        
       image: brightfly/workflow:bentoml.torch
       volumeMounts:
       - mountPath: /workdir
