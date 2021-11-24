@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-6371de2c2b4299a7d791f32c5bdb343b4555c0c7
+  name: dag-model-serving-030ee9913ba432f51c8d6302f8ca83ddbd51af4c
 spec:
   arguments:
     parameters:
@@ -10,8 +10,13 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:6371de2c2b4299a7d791f32c5bdb343b4555c0c7
+      value: 192.168.64.5:30000/bentoml-torch:030ee9913ba432f51c8d6302f8ca83ddbd51af4c
   entrypoint: model-repo-pull
+  podGC:
+    labelSelector:
+      matchLabels:
+        should-be-deleted: "true"
+    strategy: OnWorkflowCompletion
   templates:
   - container:
       args:
@@ -26,6 +31,9 @@ spec:
     inputs:
       parameters:
       - name: path
+    metadata:
+      labels:
+        should-be-deleted: "true"
     name: ls-template
   - container:
       args:
@@ -38,6 +46,9 @@ spec:
       volumeMounts:
       - mountPath: /workdir
         name: workdir
+    metadata:
+      labels:
+        should-be-deleted: "true"
     name: gitdvc-template
   - container:
       args:
@@ -49,6 +60,9 @@ spec:
       volumeMounts:
       - mountPath: /workdir
         name: workdir
+    metadata:
+      labels:
+        should-be-deleted: "true"
     name: bentoml-pack-template
   - container:
       args:
@@ -61,6 +75,9 @@ spec:
       volumeMounts:
       - mountPath: /workdir
         name: workdir
+    metadata:
+      labels:
+        should-be-deleted: "true"
     name: kaniko-template
   - dag:
       tasks:
