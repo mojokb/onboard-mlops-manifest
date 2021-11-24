@@ -85,10 +85,10 @@ spec:
     name: test-model
     script:
       command:
-      - python
+      - ls
+      args:
+      - /workdir
       image: brightfly/workflow:bentoml.torch
-      source: "from test import TestModel\ntest_model = TestModel()\ntest_model.load_model(\"/workdir/model/model.pt\")\nprint(test_model.test())
-        \      \n"
       volumeMounts:
       - mountPath: /workdir
         name: workdir
