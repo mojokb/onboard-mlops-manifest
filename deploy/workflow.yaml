@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-scripte-test3
+  name: dag-model-serving-29effcb1637149449a66ca48428dff9f682b510f
 spec:
   arguments:
     parameters:
@@ -10,7 +10,7 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:6cee7ec0ea39e756787750ccfd2b9b4b27197b54
+      value: 192.168.64.5:30000/bentoml-torch:29effcb1637149449a66ca48428dff9f682b510f
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
@@ -86,14 +86,9 @@ spec:
     script:
       command:
       - python
-      source: |
-        import sys
-        sys.path.append('/workdir')
-        from test import TestModel
-        test_model = TestModel()
-        test_model.load_model("/workdir/model/model.pt")
-        print(test_model.test())      
       image: brightfly/workflow:bentoml.torch
+      source: "from test import TestModel\ntest_model = TestModel()\ntest_model.load_model(\"/workdir/model/model.pt\")\nprint(test_model.test())
+        \      \n"
       volumeMounts:
       - mountPath: /workdir
         name: workdir
