@@ -76,14 +76,35 @@ spec:
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
+  - name: test-model
+    metadata:
+      labels:
+        should-be-deleted: "true"
+    script:
+      image: brightfly/workflow:bentoml.torch
+      command: [python]
+      source: |
+        import os
+        os.chdir("/workdir")
+        from test import TestModel
+        test_model = TestModel()
+        test_model.load_model("/workdir/model/model.pt")
+        print(test_model.test())       
+      volumeMounts:                     # same syntax as k8s Pod spec
+      - name: workdir
+        mountPath: /workdir
   - name: model-repo-pull
     dag:
       tasks:
       - name: gitdvc-pull            
         template: gitdvc-template
+      - name: test-model
+        template: test-model
+        dependencies: [gitdvc-pull]
       - name: bentoml-packing-model
         template: bentoml-pack-template
-        dependencies: [gitdvc-pull]
+        dependencies: [test-model]
+        when: "{{tasks.test-model.outputs.result}} > 0.90"
       - name: list-model-pack
         dependencies: [bentoml-packing-model]
         template: ls-template
