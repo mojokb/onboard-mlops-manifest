@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-7df6c35c0b8a53db9015f8885a2d9b967a7de5c8
+  name: dag-model-serving-836a07919a2bd00f712827d0693da0cd2f51d564
 spec:
   arguments:
     parameters:
@@ -10,7 +10,7 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:7df6c35c0b8a53db9015f8885a2d9b967a7de5c8
+      value: 192.168.64.5:30000/bentoml-torch:836a07919a2bd00f712827d0693da0cd2f51d564
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
@@ -52,7 +52,7 @@ spec:
     name: gitdvc-template
   - container:
       args:
-      - cp /root/*.py /workdir && cd /workdir && python bento_pack.py
+      - cp /workdir/bento_pack/*.py /workdir && cd /workdir && python bento_pack.py
       command:
       - sh
       - -c
@@ -66,7 +66,6 @@ spec:
     name: bentoml-pack-template
   - container:
       args:
-      - --cache=true
       - --context=/workdir/bentoml
       - --destination={{workflow.parameters.image}}
       command:
@@ -87,12 +86,13 @@ spec:
       command:
       - python
       image: brightfly/workflow:bentoml.torch
-      source: "import os\nos.chdir(\"/workdir\")\nfrom test import TestModel\ntest_model
+      source: "import sys\nsys.path.append(\"/workdir\")\nfrom test import TestModel\ntest_model
         = TestModel()\ntest_model.load_model(\"/workdir/model/model.pt\")\nprint(test_model.test())
         \      \n"
       volumeMounts:
       - mountPath: /workdir
         name: workdir
+      workingDir: /workdir
   - dag:
       tasks:
       - name: gitdvc-pull
