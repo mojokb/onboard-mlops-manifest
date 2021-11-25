@@ -6,7 +6,7 @@ spec:
   template:
     spec:
       containers:
-        - image: 192.168.54.5:30000/bentoml:test
+        - image: 192.168.64.5:30000/bentoml-torch:376270c133a29b1600b0d59b8925d9e5895d53f6
           ports:
             - containerPort: 5000
           livenessProbe:

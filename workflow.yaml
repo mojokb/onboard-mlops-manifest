@@ -6,6 +6,8 @@ spec:
   entrypoint: model-repo-pull             # 시작점 위치
   arguments:
     parameters:
+      - name: servicename
+        value: "serving"
       - name: branch
         value: "train/211110"
       - name: remote_repo
@@ -92,6 +94,35 @@ spec:
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
+  - name: deploy-knative-template
+    resource:
+      action: create
+      successCondition: status.succeeded > 0
+      failureCondition: status.failed > 3
+      manifest: |
+        apiVersion: serving.knative.dev/v1 
+        kind: Service
+        metadata:
+          name: serving-test
+        spec:
+          template:
+            spec:
+              containers:
+                - image: {{workflow.parameters.image}}
+                  ports:
+                    - containerPort: 5000
+                  livenessProbe:
+                    httpGet:
+                      path: /healthz
+                    initialDelaySeconds: 3
+                    periodSeconds: 5
+                  readinessProbe:
+                    httpGet:
+                      path: /healthz
+                    initialDelaySeconds: 3
+                    periodSeconds: 5
+                    failureThreshold: 3
+                    timeoutSeconds: 60         
   - name: model-repo-pull
     dag:
       tasks:
@@ -112,3 +143,6 @@ spec:
       - name: containerize
         dependencies: [bentoml-packing-model]
         template: kaniko-template
+      - name: deploy  
+        dependencies: [containerize]
+        template: deploy-knative-template
