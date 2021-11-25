@@ -52,7 +52,7 @@ spec:
     name: gitdvc-template
   - container:
       args:
-      - cp /root/*.py /workdir && cd /workdir && python bento_pack.py
+      - cp /workdir/bento_pack/*.py /workdir && cd /workdir && python bento_pack.py
       command:
       - sh
       - -c
