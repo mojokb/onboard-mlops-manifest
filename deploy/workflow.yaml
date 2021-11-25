@@ -1,16 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-836a07919a2bd00f712827d0693da0cd2f51d564
+  name: dag-model-serving-0366cb313e85da47b7ff75b300369e7988ef8a68
 spec:
   arguments:
     parameters:
+    - name: servicename
+      value: mojokb-0366cb313e85da47b7ff75b300369e7988ef8a68
     - name: branch
       value: train/2021-1120
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:836a07919a2bd00f712827d0693da0cd2f51d564
+      value: 192.168.64.5:30000/bentoml-torch:0366cb313e85da47b7ff75b300369e7988ef8a68
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
@@ -52,7 +54,7 @@ spec:
     name: gitdvc-template
   - container:
       args:
-      - cp /workdir/bento_pack/*.py /workdir && cd /workdir && python bento_pack.py
+      - cp /root/*.py /workdir && cd /workdir && python bento_pack.py
       command:
       - sh
       - -c
@@ -66,6 +68,7 @@ spec:
     name: bentoml-pack-template
   - container:
       args:
+      - --cache=true
       - --context=/workdir/bentoml
       - --destination={{workflow.parameters.image}}
       command:
@@ -93,6 +96,17 @@ spec:
       - mountPath: /workdir
         name: workdir
       workingDir: /workdir
+  - name: deploy-knative-template
+    resource:
+      action: create
+      manifest: "apiVersion: serving.knative.dev/v1 \nkind: Service\nmetadata:\n  name:
+        {{workflow.parameters.servicename}}\nspec:\n  template:\n    spec:\n      containers:\n
+        \       - image: {{workflow.parameters.image}}\n          ports:\n            -
+        containerPort: 5000\n          livenessProbe:\n            httpGet:\n              path:
+        /healthz\n            initialDelaySeconds: 3\n            periodSeconds: 5\n
+        \         readinessProbe:\n            httpGet:\n              path: /healthz\n
+        \           initialDelaySeconds: 3\n            periodSeconds: 5\n            failureThreshold:
+        3\n            timeoutSeconds: 60         \n"
   - dag:
       tasks:
       - name: gitdvc-pull
@@ -118,6 +132,10 @@ spec:
         - bentoml-packing-model
         name: containerize
         template: kaniko-template
+      - dependencies:
+        - containerize
+        name: deploy
+        template: deploy-knative-template
     name: model-repo-pull
   volumeClaimTemplates:
   - metadata:
