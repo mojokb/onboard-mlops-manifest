@@ -54,7 +54,7 @@ spec:
     name: gitdvc-template
   - container:
       args:
-      - cp /root/*.py /workdir && cd /workdir && python bento_pack.py
+      - cp /workdir/bento_pack/*.py /workdir && cd /workdir && python bento_pack.py
       command:
       - sh
       - -c
@@ -89,8 +89,8 @@ spec:
       command:
       - python
       image: brightfly/workflow:bentoml.torch
-      source: "import sys\nsys.path.append(\"/workdir\")\nfrom test import TestModel\ntest_model
-        = TestModel()\ntest_model.load_model(\"/workdir/model/model.pt\")\nprint(test_model.test())
+      source: "import sys\nsys.path.append(\"/workdir\")\nfrom src.models.test_model import TestModel\ntest_model
+        = TestModel()\ntest_model.load_model(\"/workdir/models/model.pt\")\nprint(test_model.test())
         \      \n"
       volumeMounts:
       - mountPath: /workdir
