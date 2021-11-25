@@ -99,8 +99,6 @@ spec:
   - name: deploy-knative-template
     resource:
       action: create
-      successCondition: status.succeeded > 0
-      failureCondition: status.failed > 3
       manifest: |
         apiVersion: serving.knative.dev/v1 
         kind: Service
