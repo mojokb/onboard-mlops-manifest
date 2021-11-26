@@ -12,7 +12,7 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:bd110ee5568a43e669a7dd84ed3a4bc838aed8be
+      value: 192.168.64.5:30000/bentoml-torch:bd110ee5568a43e669a7dd84ed3a4bc838aed8b1
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
@@ -26,7 +26,7 @@ spec:
       - '{{inputs.parameters.path}}'
       command:
       - ls
-      image: alpine:latest
+      image: ubuntu:latest
       volumeMounts:
       - mountPath: /workdir
         name: workdir
