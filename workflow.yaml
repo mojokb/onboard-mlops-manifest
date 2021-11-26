@@ -98,7 +98,7 @@ spec:
         mountPath: /workdir
   - name: deploy-knative-template
     resource:
-      action: create
+      action: apply
       manifest: |
         apiVersion: serving.knative.dev/v1 
         kind: Service
