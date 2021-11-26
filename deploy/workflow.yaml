@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-bd110ee5568a43e669a7dd84ed3a4bc838aed8be
+  name: dag-model-serving-099405688dc7c29ab866dd345665f96c2bec11ea
 spec:
   arguments:
     parameters:
@@ -12,7 +12,7 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:bd110ee5568a43e669a7dd84ed3a4bc838aed8b1
+      value: 192.168.64.5:30000/bentoml-torch:099405688dc7c29ab866dd345665f96c2bec11ea
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
@@ -26,7 +26,7 @@ spec:
       - '{{inputs.parameters.path}}'
       command:
       - ls
-      image: ubuntu:latest
+      image: alpine:latest
       volumeMounts:
       - mountPath: /workdir
         name: workdir
@@ -35,7 +35,7 @@ spec:
       - name: path
     metadata:
       labels:
-        should-be-deleted: "false"
+        should-be-deleted: "true"
     name: ls-template
   - container:
       args:
@@ -98,7 +98,7 @@ spec:
       workingDir: /workdir
   - name: deploy-knative-template
     resource:
-      action: apply
+      action: create
       manifest: "apiVersion: serving.knative.dev/v1 \nkind: Service\nmetadata:\n  name:
         {{workflow.parameters.servicename}}\nspec:\n  template:\n    spec:\n      containers:\n
         \       - image: {{workflow.parameters.image}}\n          ports:\n            -
