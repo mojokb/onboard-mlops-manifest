@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-099405688dc7c29ab866dd345665f96c2bec11ea
+  name: dag-model-serving-687efe4789d0d8087f8f6b241e10534195ce5ed7
 spec:
   arguments:
     parameters:
@@ -12,7 +12,7 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:099405688dc7c29ab866dd345665f96c2bec11ea
+      value: 192.168.64.5:30000/bentoml-torch:687efe4789d0d8087f8f6b241e10534195ce5ed7
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
