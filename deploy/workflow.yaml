@@ -98,7 +98,7 @@ spec:
       workingDir: /workdir
   - name: deploy-knative-template
     resource:
-      action: create
+      action: apploy
       manifest: "apiVersion: serving.knative.dev/v1 \nkind: Service\nmetadata:\n  name:
         {{workflow.parameters.servicename}}\nspec:\n  template:\n    spec:\n      containers:\n
         \       - image: {{workflow.parameters.image}}\n          ports:\n            -
