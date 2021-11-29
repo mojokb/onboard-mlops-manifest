@@ -111,7 +111,7 @@ spec:
     container:
       image: brightfly/get-label:latest
       command: [sh, -c]
-      args: ["python find.py --service_name={{workflow.parameters.servicename}} > /tmp/result.txt"]        
+      args: ["python find.py --service_name={{workflow.parameters.servicename}} > /tmp/result.txt && cat /tmp/result.txt"]        
     outputs:
       parameters:
       - name: f1-score		# name of output parameter
