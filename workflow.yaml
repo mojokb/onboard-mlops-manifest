@@ -88,7 +88,7 @@ spec:
       source: |
         import sys
         sys.path.append("/workdir")
-        from notebook.torch_test import TrainModel
+        from notebooks.torch_test import TrainModel
         test_model = TrainModel()
         test_model.load_model("/workdir/models/model.pt")
         f1_score = test_model.test("/workdir/data/processed/test_set.npz")
