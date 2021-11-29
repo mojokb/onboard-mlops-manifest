@@ -1,20 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-37208159103360fd7b53e550abb25567ee92c4f9
+  name: dag-model-serving-f14315b06d11f73695423e975b086cd97125e01a
 spec:
   arguments:
     parameters:
     - name: servicename
-      value: onboard-mlops-model
+      value: train-onboard-mlops-model
     - name: branch
       value: train/2021-1120
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:37208159103360fd7b53e550abb25567ee92c4f9
+      value: 192.168.64.5:30000/bentoml-torch:f14315b06d11f73695423e975b086cd97125e01a
     - name: hash
-      value: 37208159103360fd7b53e550abb25567ee92c4f9
+      value: f14315b06d11f73695423e975b086cd97125e01a
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
@@ -107,6 +107,7 @@ spec:
   - container:
       args:
       - python find.py --service_name={{workflow.parameters.servicename}} > /tmp/result.txt
+        && cat /tmp/result.txt
       command:
       - sh
       - -c
@@ -151,7 +152,7 @@ spec:
         - get-f1-score-from-base
         name: bentoml-packing-model
         template: bentoml-pack-template
-        when: '{{tasks.test-model.outputs.result}} > {{tasks.get-f1-score-from-base.outputs.parameters.f1-score}}'
+        when: '{{tasks.test-model.outputs.result}} > {{tasks.get-f1-score-from-base.outputs.result}}'
       - arguments:
           parameters:
           - name: path
