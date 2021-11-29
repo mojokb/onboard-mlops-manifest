@@ -88,10 +88,10 @@ spec:
       source: |
         import sys
         sys.path.append("/workdir")
-        from src.models.test_model import TestModel
-        test_model = TestModel(model_path="/workdir/models/model.pt",
-                               dataset_path="/workdir/data/processed/test_set.npz")
-        f1_score = test_model.test()
+        from notebook.torch_test import TrainModel
+        test_model = TrainModel()
+        test_model.load_model("/workdir/models/model.pt")
+        f1_score = test_model.test("/workdir/data/processed/test_set.npz")
         f = open('/tmp/result.txt', 'w')
         f.write(str(f1_score))
         print(f1_score)        
