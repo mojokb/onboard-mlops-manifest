@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: get-label
+  namespace: argo
+  labels:
+    app: get-label
+spec:
+  selector:
+    matchLabels:
+      app: get-label
+  template:
+    metadata:
+      labels:
+        app: get-label
+    spec:
+      containers:
+      - name: get-label
+        image: brightfly/get-label:latest

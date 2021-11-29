@@ -1,0 +1,12 @@
+kind: AuthorizationPolicy
+apiVersion: security.istio.io/v1beta1
+metadata:
+  name: predict-allow
+  namespace: kubeflow-user-example-com
+spec:
+  action: ALLOW
+  rules:
+  - to:
+    - operation:
+        paths: ["/predict"]
+        methods: ["POST"]
