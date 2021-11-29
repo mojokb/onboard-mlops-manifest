@@ -151,7 +151,7 @@ spec:
         - get-f1-score-from-base
         name: bentoml-packing-model
         template: bentoml-pack-template
-        when: '{{tasks.test-model.outputs.result}} > {{tasks.get-f1-score-from-base.outputs.result}}'
+        when: '{{tasks.test-model.outputs.result}} > {{tasks.get-f1-score-from-base.outputs.f1-score}}'
       - arguments:
           parameters:
           - name: path
