@@ -99,7 +99,15 @@ spec:
       volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /workdir
+    outputs:
+      parameters:
+      - name: f1-score		# name of output parameter
+        valueFrom:
+          path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt        
   - name: deploy-knative-template
+    inputs:
+      parameters:
+      - name: f1-score
     resource:
       action: apply
       manifest: |
@@ -107,6 +115,9 @@ spec:
         kind: Service
         metadata:
           name: {{workflow.parameters.servicename}}
+          labels:
+             f1-score: "{{inputs.parameters.f1-score}}"
+             base-branch: "{{workflow.parameters.branch}}"
         spec:
           template:
             spec:
@@ -149,3 +160,5 @@ spec:
       - name: deploy  
         dependencies: [containerize]
         template: deploy-knative-template
+        arguments:
+          parameters: [{name: f1-score, value: "{{tasks.test-model.outputs.result}}"}]
