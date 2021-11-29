@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-aeb7106ab3df72e431b215e46d22f2e359c40e59
+  name: dag-model-serving-9b477c56b4e077ca8bc62beefb7784ad02322bcb
 spec:
   arguments:
     parameters:
@@ -12,7 +12,9 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:aeb7106ab3df72e431b215e46d22f2e359c40e59
+      value: 192.168.64.5:30000/bentoml-torch:9b477c56b4e077ca8bc62beefb7784ad02322bcb
+    - name: hash
+      value: 9b477c56b4e077ca8bc62beefb7784ad02322bcb
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
@@ -102,6 +104,26 @@ spec:
       - mountPath: /workdir
         name: workdir
       workingDir: /workdir
+  - container:
+      args:
+      - python find.py --service_name={{workflow.parameters.servicename}} > /tmp/result.txt
+      command:
+      - sh
+      - -c
+      image: brightfly/get-label:latest
+      volumeMounts:
+      - mountPath: /workdir
+        name: workdir
+      workingDir: /workdir
+    metadata:
+      labels:
+        should-be-deleted: "true"
+    name: get-f1-score-from-base
+    outputs:
+      parameters:
+      - name: f1-score
+        valueFrom:
+          path: /tmp/result.txt
   - inputs:
       parameters:
       - name: f1-score
@@ -126,9 +148,13 @@ spec:
         template: test-model
       - dependencies:
         - test-model
+        name: get-f1-score-from-base
+        template: get-f1-score-from-base
+      - dependencies:
+        - get-f1-score-from-base
         name: bentoml-packing-model
         template: bentoml-pack-template
-        when: '{{tasks.test-model.outputs.result}} > 0.90'
+        when: '{{tasks.test-model.outputs.result}} > {{tasks.get-f1-score-from-base.outputs.result}}'
       - arguments:
           parameters:
           - name: path
