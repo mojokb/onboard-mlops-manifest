@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-798dbc372167d6195a50c53e25be4ac1dbffd334
+  name: dag-model-serving-b8149f7467ca333b5a6c3b1cae72810022a68571
 spec:
   arguments:
     parameters:
@@ -12,7 +12,7 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:798dbc372167d6195a50c53e25be4ac1dbffd334
+      value: 192.168.64.5:30000/bentoml-torch:b8149f7467ca333b5a6c3b1cae72810022a68571
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
@@ -90,8 +90,10 @@ spec:
       - python
       image: brightfly/workflow:bentoml.torch
       source: "import sys\nsys.path.append(\"/workdir\")\nfrom src.models.test_model
-        import TestModel\ntest_model = TestModel()\ntest_model.load_model(\"/workdir/models/model.pt\")\nprint(test_model.test())
-        \      \n"
+        import TestModel\ntest_model = TestModel(model_path=\"/workdir/models/model.pt\",\n
+        \                      dataset_path=\"/workdir/data/processed/test_set.npz\")\nf1_score
+        = test_model.test()\nf = open('/tmp/result.txt', 'w')\nf.write(str(f1_score))\nprint(f1_score)
+        \       \n"
       volumeMounts:
       - mountPath: /workdir
         name: workdir
