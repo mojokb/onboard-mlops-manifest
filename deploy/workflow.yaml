@@ -96,7 +96,7 @@ spec:
       command:
       - python
       image: brightfly/workflow:bentoml.torch
-      source: "import sys\nsys.path.append(\"/workdir\")\nfrom notebook.torch_test
+      source: "import sys\nsys.path.append(\"/workdir\")\nfrom notebooks.torch_test
         import TrainModel\ntest_model = TrainModel()\ntest_model.load_model(\"/workdir/models/model.pt\")\nf1_score
         = test_model.test(\"/workdir/data/processed/test_set.npz\")\nf = open('/tmp/result.txt',
         'w')\nf.write(str(f1_score))\nprint(f1_score)        \n"
