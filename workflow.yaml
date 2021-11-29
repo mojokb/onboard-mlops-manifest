@@ -104,6 +104,23 @@ spec:
       - name: f1-score		# name of output parameter
         valueFrom:
           path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt        
+  - name: get-f1-score-from-base     
+    metadata:
+      labels:
+        should-be-deleted: "true"  
+    container:
+      image: brightfly/get-label:latest
+      command: [sh, -c]
+      args: ["python find.py --service_name={{workflow.parameters.servicename}} > /tmp/result.txt"]        
+      workingDir: /workdir  
+      volumeMounts:                     # same syntax as k8s Pod spec
+      - name: workdir
+        mountPath: /workdir        
+    outputs:
+      parameters:
+      - name: f1-score		# name of output parameter
+        valueFrom:
+          path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt         
   - name: deploy-knative-template
     inputs:
       parameters:
@@ -144,10 +161,13 @@ spec:
       - name: test-model
         template: test-model
         dependencies: [gitdvc-pull]
+      - name: get-f1-score-from-base
+        template: get-f1-score-from-base
+        dependencies: [test-model]
       - name: bentoml-packing-model
         template: bentoml-pack-template
-        dependencies: [test-model]
-        when: "{{tasks.test-model.outputs.result}} > 0.90"
+        dependencies: [get-f1-score-from-base]
+        when: "{{tasks.test-model.outputs.result}} > {{tasks.get-f1-score-from-base.outputs.result}}"
       - name: list-model-pack
         dependencies: [bentoml-packing-model]
         template: ls-template
