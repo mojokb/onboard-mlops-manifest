@@ -112,10 +112,6 @@ spec:
       image: brightfly/get-label:latest
       command: [sh, -c]
       args: ["python find.py --service_name={{workflow.parameters.servicename}} > /tmp/result.txt"]        
-      workingDir: /workdir  
-      volumeMounts:                     # same syntax as k8s Pod spec
-      - name: workdir
-        mountPath: /workdir        
     outputs:
       parameters:
       - name: f1-score		# name of output parameter
@@ -163,10 +159,10 @@ spec:
         dependencies: [gitdvc-pull]
       - name: get-f1-score-from-base
         template: get-f1-score-from-base
-        dependencies: [test-model]
+        dependencies: [gitdvc-pull]
       - name: bentoml-packing-model
         template: bentoml-pack-template
-        dependencies: [get-f1-score-from-base]
+        dependencies: [test-model, get-f1-score-from-base]
         when: "{{tasks.test-model.outputs.result}} > {{tasks.get-f1-score-from-base.outputs.result}}"
       - name: list-model-pack
         dependencies: [bentoml-packing-model]
