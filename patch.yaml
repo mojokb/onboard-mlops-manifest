@@ -6,13 +6,13 @@
       arguments:
         parameters:
           - name: servicename 
-            value: "train-onboard-mlops-model"
+            value: "onboard-mlops-model"
           - name: branch
-            value: "train/2021-1120"
+            value: "main"
           - name: remote_repo
             value: "https://github.com/mojokb/onboard-mlops-model.git"
           - name: image
-            value: "192.168.64.5:30000/bentoml-torch:f14315b06d11f73695423e975b086cd97125e01a"        
+            value: "192.168.64.5:30000/bentoml-torch:f6fd2ccef3dbea3bbcfded2cfcc47e34baa0ba09"        
           - name: hash
-            value: "f14315b06d11f73695423e975b086cd97125e01a"        
+            value: "f6fd2ccef3dbea3bbcfded2cfcc47e34baa0ba09"        
 EOF    
