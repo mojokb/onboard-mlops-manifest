@@ -32,7 +32,8 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 RUN echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
 RUN apt-get update
-RUN apt-get install -y kubectl 
+RUN apt-get install -y kubectl
+RUN pip install kubernetes
 COPY find.py find.py
 
 CMD ["python", "find.py"]
