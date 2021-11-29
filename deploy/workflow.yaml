@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-model-serving-b8149f7467ca333b5a6c3b1cae72810022a68571
+  name: dag-model-serving-aeb7106ab3df72e431b215e46d22f2e359c40e59
 spec:
   arguments:
     parameters:
@@ -12,7 +12,7 @@ spec:
     - name: remote_repo
       value: https://github.com/mojokb/onboard-mlops-model.git
     - name: image
-      value: 192.168.64.5:30000/bentoml-torch:b8149f7467ca333b5a6c3b1cae72810022a68571
+      value: 192.168.64.5:30000/bentoml-torch:aeb7106ab3df72e431b215e46d22f2e359c40e59
   entrypoint: model-repo-pull
   podGC:
     labelSelector:
@@ -85,30 +85,37 @@ spec:
       labels:
         should-be-deleted: "true"
     name: test-model
+    outputs:
+      parameters:
+      - name: f1-score
+        valueFrom:
+          path: /tmp/result.txt
     script:
       command:
       - python
       image: brightfly/workflow:bentoml.torch
-      source: "import sys\nsys.path.append(\"/workdir\")\nfrom src.models.test_model
-        import TestModel\ntest_model = TestModel(model_path=\"/workdir/models/model.pt\",\n
-        \                      dataset_path=\"/workdir/data/processed/test_set.npz\")\nf1_score
-        = test_model.test()\nf = open('/tmp/result.txt', 'w')\nf.write(str(f1_score))\nprint(f1_score)
-        \       \n"
+      source: "import sys\nsys.path.append(\"/workdir\")\nfrom notebook.torch_test
+        import TrainModel\ntest_model = TrainModel()\ntest_model.load_model(\"/workdir/models/model.pt\")\nf1_score
+        = test_model.test(\"/workdir/data/processed/test_set.npz\")\nf = open('/tmp/result.txt',
+        'w')\nf.write(str(f1_score))\nprint(f1_score)        \n"
       volumeMounts:
       - mountPath: /workdir
         name: workdir
       workingDir: /workdir
-  - name: deploy-knative-template
+  - inputs:
+      parameters:
+      - name: f1-score
+    name: deploy-knative-template
     resource:
       action: apply
       manifest: "apiVersion: serving.knative.dev/v1 \nkind: Service\nmetadata:\n  name:
-        {{workflow.parameters.servicename}}\nspec:\n  template:\n    spec:\n      containers:\n
-        \       - image: {{workflow.parameters.image}}\n          ports:\n            -
-        containerPort: 5000\n          livenessProbe:\n            httpGet:\n              path:
-        /healthz\n            initialDelaySeconds: 3\n            periodSeconds: 5\n
-        \         readinessProbe:\n            httpGet:\n              path: /healthz\n
-        \           initialDelaySeconds: 3\n            periodSeconds: 5\n            failureThreshold:
-        3\n            timeoutSeconds: 60         \n"
+        {{workflow.parameters.servicename}}\n  labels:\n     f1-score: \"{{inputs.parameters.f1-score}}\"\nspec:\n
+        \ template:\n    spec:\n      containers:\n        - image: {{workflow.parameters.image}}\n
+        \         ports:\n            - containerPort: 5000\n          livenessProbe:\n
+        \           httpGet:\n              path: /healthz\n            initialDelaySeconds:
+        3\n            periodSeconds: 5\n          readinessProbe:\n            httpGet:\n
+        \             path: /healthz\n            initialDelaySeconds: 3\n            periodSeconds:
+        5\n            failureThreshold: 3\n            timeoutSeconds: 60         \n"
   - dag:
       tasks:
       - name: gitdvc-pull
@@ -134,7 +141,11 @@ spec:
         - bentoml-packing-model
         name: containerize
         template: kaniko-template
-      - dependencies:
+      - arguments:
+          parameters:
+          - name: f1-score
+            value: '{{tasks.test-model.outputs.result}}'
+        dependencies:
         - containerize
         name: deploy
         template: deploy-knative-template
