@@ -1,4 +1,4 @@
-  nameSuffix: "-3b95e03344159a0a4435cd55cd67232f16f29040"  # maybe replace ssh
+  nameSuffix: "-c05f413d5440dc5dee23fe6c83bc6977a7e87d8f"  # maybe replace ssh
   resources:
   - workflow.yaml
   patchesStrategicMerge:
