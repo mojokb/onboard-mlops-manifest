@@ -262,7 +262,6 @@ spec:
                       when: "{{workflow.parameters.object_prefix}} == none"
                     - name: make-dataset
                       template: make-dataset
-                      depends: verify-raw-data.Succeeded
                       when: >-
                           ( {{tasks.verify-raw-data.outputs.result}} == Success )
                           ||
