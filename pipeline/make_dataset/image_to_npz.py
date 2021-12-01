@@ -44,7 +44,7 @@ def image_label_to_npz(image_path=".",
         raise RuntimeError(f'이미지({len(array_of_images)})랑 라벨({len(labels)})의 수가 맞지 않음')
 
     if data_split == 'none':
-        data_train, data_valid, labels_train, labels_valid = train_test_split(array_of_images, labels, stratify=y,
+        data_train, data_valid, labels_train, labels_valid = train_test_split(array_of_images, labels, stratify=labels,
                                                                               test_size=0.10, random_state=42)
         data_train, data_test, labels_train, labels_test = train_test_split(data_train, labels_train,
                                                                             test_size=0.10, random_state=42)
@@ -53,7 +53,7 @@ def image_label_to_npz(image_path=".",
         np.savez(os.path.join(save_path, "test_set.npz"), x=data_test, y=labels_test)
 
     if data_split == 'train_valid':
-        data_train, data_valid, labels_train, labels_valid = train_test_split(array_of_images, labels, stratify=y,
+        data_train, data_valid, labels_train, labels_valid = train_test_split(array_of_images, labels, stratify=labels,
                                                                               test_size=0.10, random_state=42)
         np.savez(os.path.join(save_path, "train_set.npz"), x=data_train, y=labels_train)
         np.savez(os.path.join(save_path, "valid_set.npz"), x=data_valid, y=labels_valid)
@@ -61,7 +61,6 @@ def image_label_to_npz(image_path=".",
     if data_split == 'test':
         np.savez(os.path.join(save_path, "test_set.npz"), x=array_of_images, y=labels)
 
-    print("Success")
 
 
 if __name__ == "__main__":

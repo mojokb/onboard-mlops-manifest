@@ -269,11 +269,9 @@ spec:
                     - name: gitdvc-pull
                       template: gitdvc-template
                       depends: make-dataset.Succeeded
-                      when: "{{tasks.make-dataset.outputs.result}} == Success"
                     - name: get-f1-score-from-base
                       template: get-f1-score-from-base
                       depends: make-dataset.Succeeded
-                      when: "{{tasks.make-dataset.outputs.result}} == Success"
                     - name: test-base-model
                       template: test-model
                       depends: gitdvc-pull.Succeeded && get-f1-score-from-base.Succeeded
