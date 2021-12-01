@@ -48,7 +48,29 @@ spec:
                   - name: object_prefix
                     # the value will get overridden by event payload from test-dep
                     value: "20211128-163614/"
+                  - name: data_split
+                    # none : will split train/valid/test,   train-test : train -> train/valid test
+                    value: train-test
                 templates:
+                - name: download-raw-data
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  inputs:
+                    parameters:
+                    - name: bucket_name
+                    - name: object_prefix
+                    - name: data_split
+                  container:
+                    image: brightfly/download-minio:latest
+                    command: [python, download_minio.py]
+                    args: ["--bucket_name={{inputs.parameters.bucket_name}}",
+                           "--object_prefix={{inputs.parameters.object_prefix}}",
+                           "--data_split={{inputs.parameters.data_split}}",
+                           "--download_path=/workdir"]
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
                 - name: verify-raw-data
                   metadata:
                     labels:
@@ -70,32 +92,16 @@ spec:
                   inputs:
                     parameters:
                     - name: object_prefix
+                    - name: data_split
                   container:
                     image: brightfly/make-dataset:latest
                     command: [python, image_to_npz.py]
                     args: ["--save_path=/workdir",
                            "--image_path=/workdir/{{inputs.parameters.object_prefix}}",
-                           "--label_file_path=/workdir/{{inputs.parameters.object_prefix}}/labels.txt"]
+                           "--data_split={{inputs.parameters.data_split}}"]
                     volumeMounts:                     # same syntax as k8s Pod spec
                     - name: workdir
                       mountPath: /workdir                
-                - name: download-raw-data
-                  metadata:
-                    labels:
-                      should-be-deleted: "true"
-                  inputs:
-                    parameters:
-                    - name: bucket_name
-                    - name: object_prefix
-                  container:
-                    image: brightfly/download-minio:latest
-                    command: [python, download_minio.py]
-                    args: ["--bucket_name={{inputs.parameters.bucket_name}}", 
-                           "--object_prefix={{inputs.parameters.object_prefix}}",
-                           "--download_path=/workdir"]
-                    volumeMounts:                     # same syntax as k8s Pod spec
-                    - name: workdir
-                      mountPath: /workdir
                 - name: gitdvc-template
                   metadata:
                     labels:
@@ -190,7 +196,7 @@ spec:
                     parameters:
                     - name: f1-score		# name of output parameter
                       valueFrom:
-                        path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt  
+                        path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt
                 - name: save-dataset-minio
                   inputs:
                     parameters:
@@ -234,19 +240,38 @@ spec:
                       template: download-raw-data
                       arguments:
                         parameters: [{name: bucket_name, value: "{{workflow.parameters.bucket_name}}"},
-                                     {name: object_prefix, value: "{{workflow.parameters.object_prefix}}"}]
-                    - name: verify-raw-data
+                                     {name: object_prefix, value: "{{workflow.parameters.object_prefix}}"},
+                                     {name: data_split, value: "{{workflow.parameters.data_split}}"}]
+                    - name: verify-train-data
                       template: verify-raw-data
                       depends: download-raw-data.Succeeded
                       arguments:
-                        parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}"}]                      
+                        parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}/train"}]
+                      when: "{{workflow.parameters.object_prefix}} == train_test"
+                    - name: verify-test-data
+                      template: verify-raw-data
+                      depends: download-raw-data.Succeeded
+                      arguments:
+                        parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}/test"}]
+                      when: "{{workflow.parameters.object_prefix}} == train_test"
+                    - name: verify-split-none-data
+                      template: verify-raw-data
+                      depends: download-raw-data.Succeeded
+                      arguments:
+                        parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}"}]
+                      when: "{{workflow.parameters.object_prefix}} == none"
                     - name: make-dataset
                       template: make-dataset
                       depends: verify-raw-data.Succeeded
-                      when: "{{tasks.verify-raw-data.outputs.result}} == Success"
+                      when: >-
+                          ( {{tasks.verify-raw-data.outputs.result}} == Success )
+                          ||
+                          ( {{tasks.verify-test-data.outputs.result}} == Success &&
+                            {{tasks.verify-train-data.outputs.result}} == Success )
                       arguments:
-                        parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}"}]                      
-                    - name: gitdvc-pull            
+                        parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}"}]
+                                     {name: data_split, value: "{{workflow.parameters.data_split}}"}]
+                    - name: gitdvc-pull
                       template: gitdvc-template
                       depends: make-dataset.Succeeded
                       when: "{{tasks.make-dataset.outputs.result}} == Success"
@@ -265,24 +290,18 @@ spec:
                       when: "{{tasks.test-base-model.outputs.result}} < {{tasks.get-f1-score-from-base.outputs.result}}"
                       arguments:
                         parameters: [{name: model_path, value: "/workdir/repo/models/model.pt"}]                      
-                    - name: put-dataset-queue
-                      when: "{{tasks.retrain-model-from-base.outputs.parameters.f1-score}} < 0.7"
+                    - name: put-dataset-abnormal
+                      when: "{{tasks.retrain-model-from-base.outputs.parameters.f1-score}} < 0.5"
                       depends: retrain-model-from-base.Succeeded
                       template: save-dataset-minio
                       arguments:
                         parameters: [{name: bucket_name, value: "torch-dataset-queue"}]                      
                     - name: put-dataset
-                      when: "{{tasks.retrain-model-from-base.outputs.parameters.f1-score}} >= 0.7"
+                      when: "{{tasks.retrain-model-from-base.outputs.parameters.f1-score}} >= 0.5"
                       depends: retrain-model-from-base.Succeeded
                       template: save-dataset-minio
                       arguments:
                         parameters: [{name: bucket_name, value: "torch-dataset"}]                      
-                   #- name: retrain-model
-                    #  template: retrain
-                    #  depends: retrain-model-from-base.Succeeded
-                    #- name: list-workdir
-                    #  template: list-directory
-                    #  depends: retrain-model.Succeeded
           parameters:
             - src:
                 dependencyName: test-dep
@@ -292,3 +311,7 @@ spec:
                 dependencyName: test-dep
                 dataTemplate: "{{ .Input.body.object_prefix }}"
               dest: spec.arguments.parameters.3.value
+            - src:
+                dependencyName: test-dep
+                dataTemplate: "{{ .Input.body.data_split }}"
+              dest: spec.arguments.parameters.4.value

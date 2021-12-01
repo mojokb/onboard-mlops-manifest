@@ -1,0 +1,165 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: webhook-retrain
+  namespace: argo
+spec:
+  template:
+    serviceAccountName: operate-workflow-sa
+  dependencies:
+    - name: test-dep
+      eventSourceName: webhook-retrain
+      eventName: dataset
+  triggers:
+    - template:
+        name: webhook-workflow-trigger
+        k8s:
+          operation: create
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: retrain-
+              spec:
+                entrypoint: retrain-pipeline
+                volumeClaimTemplates:                 # download raw image from minio 
+                - metadata:
+                    name: workdir                     
+                  spec:
+                    accessModes: [ "ReadWriteOnce" ]
+                    resources:
+                      requests:
+                        storage: 1Gi
+                podGC:
+                  strategy: OnPodCompletion
+                  labelSelector:
+                    matchLabels:
+                      should-be-deleted: "true"   
+                arguments:
+                  parameters:
+                  - name: base_repo
+                    value: "https://github.com/mojokb/onboard-mlops-model.git"
+                  - name: base_branch
+                    value: "main"
+                  - name: bucket_name
+                    # the value will get overridden by event payload from test-dep
+                    value: "torch-raw-images"
+                  - name: object_prefix
+                    # the value will get overridden by event payload from test-dep
+                    value: "20211128-163614/"
+                templates:
+               - name: gitdvc-template
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"    
+                  container:
+                    image: brightfly/workflow:git
+                    command: [sh, -c]
+                    args: ["git clone -b {{workflow.parameters.base_branch}} {{workflow.parameters.base_repo}} /workdir/repo && cd /workdir/repo && dvc pull"]
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
+               - name: list-directory
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  container:
+                    image: alpine:latest
+                    command: [ls]
+                    args: ["-R", "/workdir"]
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
+                - name: get-f1-score-from-base     
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"  
+                  container:
+                    image: brightfly/get-label:latest
+                    command: [sh, -c]
+                    args: ["python find.py --service_name=onboard-mlops-model > /tmp/result.txt && cat /tmp/result.txt"]        
+                  outputs:
+                    parameters:
+                    - name: f1-score		# name of output parameter
+                      valueFrom:
+                        path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt  
+                - name: retrain-model
+                  inputs:
+                    parameters:
+                    - name: model_path 
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  script:
+                    image: brightfly/workflow:bentoml.torch
+                    command: [python]
+                    source: |
+                      import sys
+                      sys.path.append("/workdir/repo")
+                      from notebooks.torch_test import TrainModel
+                      retrain = TrainModel()
+                      retrain.load_model("{{inputs.parameters.model_path}}") 
+                      retrain.train(train_set="/workdir/train_set.npz", valid_set="/workdir/valid_set.npz", epochs=10, lr=0.01)
+                      retrain.save_model(save_model_path="/workdir")
+                      f1_score = retrain.test(test_set="/workdir/test_set.npz") 
+                      f = open('/tmp/result.txt', 'w')
+                      f.write(str(f1_score))
+                      print(f1_score)
+                    workingDir: /workdir/repo  
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
+                  outputs:
+                    parameters:
+                    - name: f1-score		# name of output parameter
+                      valueFrom:
+                        path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt  
+                - name: move-dataset-minio
+                  inputs:
+                    parameters:
+                    - name: bucket_name 
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  container:
+                    image: brightfly/upload-minio:latest
+                    command: [python, upload.py]
+                    args: ["--bucket_name={{inputs.parameters.bucket_name}}", "--dataset_path=/workdir", "--prefix={{workflow.parameters.object_prefix}}" ]
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
+               - name: retrain-pipeline
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  dag:
+                    tasks:
+                    - name: gitdvc-pull
+                      template: gitdvc-template
+                      depends: make-dataset.Succeeded
+                    - name: get-f1-score-from-base
+                      template: get-f1-score-from-base
+                      depends: make-dataset.Succeeded
+                   #  - name: pull-train-dataset
+                    - name: retrain-model-from-base
+                      template: retrain-model
+                      depends: test-base-model.Succeeded
+                      arguments:
+                        parameters: [{name: model_path, value: "/workdir/repo/models/model.pt"}]
+                   #  - name: create-branch
+                   #  - name: push-pr
+                    - name: move-dataset-to-done
+                      depends: retrain-model-from-base.Succeeded
+                      template: move-dataset-minio
+                      arguments:
+                        parameters: [{name: bucket_name, value: "torch-dataset"}]                      
+          parameters:
+            - src:
+                dependencyName: test-dep
+                dataTemplate: "{{ .Input.body.bucket_name }}"
+              dest: spec.arguments.parameters.2.value
+            - src:
+                dependencyName: test-dep
+                dataTemplate: "{{ .Input.body.object_prefix }}"
+              dest: spec.arguments.parameters.3.value

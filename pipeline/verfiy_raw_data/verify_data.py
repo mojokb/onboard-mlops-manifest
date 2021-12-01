@@ -58,7 +58,7 @@ class VerifyRawData:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--raw_path', type=str, default="../mnist_image_folder_0", help='--raw_path=mnist_image_folder_1')
+    parser.add_argument('--raw_path', type=str, default="../mnist_image_folder_0", help='--raw_path=raw_pat')
     args = parser.parse_args()
 
     test_data = VerifyRawData(raw_path=args.raw_path)
