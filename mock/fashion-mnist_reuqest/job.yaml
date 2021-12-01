@@ -1,21 +1,24 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mnist-mock
+  name: f-mnist-mock
   namespace: default
 spec:
   template:
     spec:
       containers:
       - name: mnist-mock
-        image: 192.168.64.5:30000/mock-request:latest
+        image: 192.168.64.5:30000/fm-mock-request:latest
         env:
           - name: PREDICT_SERVER_PATH
             value: "http://onboard-mlops-model.argo/predict"
           - name: SLEEP_TIME
             value: "1"
           - name: DOWNLOAD 
-            value: "true"
+            value: "false"
+        volumeMounts:
+        - name: mnist-image
+          mountPath: /mnist_image
       restartPolicy: Never
       volumes:
       - name: mnist-image

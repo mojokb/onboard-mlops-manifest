@@ -7,14 +7,13 @@ from os import environ
 import cv2
 
 outdir = "/mnist_image"
-os.makedirs(outdir, exist_ok=True)
 
 if environ.get("DOWNLOAD") != 'false':
   test_image = 't10k-images-idx3-ubyte'
   test_label = 't10k-labels-idx1-ubyte'
   
   for f in [test_image, test_label]:
-      os.system('wget --no-check-certificate http://yann.lecun.com/exdb/mnist/%s.gz' % (f,))
+      os.system('wget --no-check-certificate http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/%s.gzz' % (f,))
   
   for f in [test_image, test_label]:
       os.system('gunzip %s.gz' % (f,))
