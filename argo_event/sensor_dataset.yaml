@@ -263,8 +263,6 @@ spec:
                     - name: make-dataset
                       template: make-dataset
                       depends: verify-split-none-data.Succeeded || verify-train-data.Succeeded && verify-test-data.Succeeded
-                      when: "{{tasks.verify-split-none-data.outputs.result}} == Success ||
-                              ({{tasks.verify-test-data.outputs.result}} == Success && {{tasks.verify-train-data.outputs.result}} == Success)"
                       arguments:
                         parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}"},
                                      {name: data_split, value: "{{workflow.parameters.data_split}}"}]
