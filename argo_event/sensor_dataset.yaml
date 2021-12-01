@@ -263,7 +263,7 @@ spec:
                     - name: make-dataset
                       template: make-dataset
                       when: >-
-                          ( {{tasks.verify-raw-data.outputs.result}} == Success )
+                          ( {{tasks.verify-split-none-data.outputs.result}} == Success )
                           ||
                           ( {{tasks.verify-test-data.outputs.result}} == Success &&
                             {{tasks.verify-train-data.outputs.result}} == Success )
