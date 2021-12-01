@@ -262,6 +262,7 @@ spec:
                       when: "{{workflow.parameters.object_prefix}} == none"
                     - name: make-dataset
                       template: make-dataset
+                      depends: verify-split-none-data.Succeeded || verify-train-data.Succeeded && verify-test-data.Succeeded
                       when: "( {{tasks.verify-split-none-data.outputs.result}} == Success )
                               ||
                               ( {{tasks.verify-test-data.outputs.result}} == Success &&

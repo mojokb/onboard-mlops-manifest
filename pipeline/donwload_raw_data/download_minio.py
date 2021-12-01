@@ -36,7 +36,7 @@ class DownloadMinio:
             iter = self._get_list_from_minio(recursive=False)
             # have to include /train /test
             obj_list = [obj for obj in iter]
-            if 'train' not in obj_list or 'test' not in obj_list:
+            if 'train/' not in obj_list or 'test/' not in obj_list:
                 raise RuntimeError("train_test type has to two dir types [train test]")
 
     def download(self):
