@@ -1,2 +1,2 @@
 # onboard-mlops-manifest
-## kustomize build
+## code for ml-infra

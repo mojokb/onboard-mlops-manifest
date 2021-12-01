@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: avg-probs-rate
+  namespace: default
+spec:
+  groups:
+  - name: avg-probs-rate.rules
+    rules:
+    - alert: prob-rate
+      expr: avg(BENTOML_predict_probs_rate) < 0.7
+      labels:
+        severity: critical
+      for: 5s 
+      annotations:
+        triggered: "예측 평균이 0.7 이하"
+        resolved: "예측 평균이 0.7 이상"
+        value: "{{ printf \"%.5fs\" $value }}" # $value 값이 너무 긴 소수점이라서 round함
+        summary: "예측 평균 알람 서비스에서 알람이 발생했습니다."
+        query: 'avg(BENTOML_predict_probs_rate) < 0.7'  

@@ -1,0 +1,294 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: webhook
+  namespace: argo
+spec:
+  template:
+    serviceAccountName: operate-workflow-sa
+  dependencies:
+    - name: test-dep
+      eventSourceName: webhook
+      eventName: dataset
+  triggers:
+    - template:
+        name: webhook-workflow-trigger
+        k8s:
+          operation: create
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: dataset-
+              spec:
+                entrypoint: model-repo-pull
+                volumeClaimTemplates:                 # download raw image from minio 
+                - metadata:
+                    name: workdir                     
+                  spec:
+                    accessModes: [ "ReadWriteOnce" ]
+                    resources:
+                      requests:
+                        storage: 1Gi  
+                podGC:
+                  strategy: OnPodCompletion
+                  labelSelector:
+                    matchLabels:
+                      should-be-deleted: "true"   
+                arguments:
+                  parameters:
+                  - name: base_repo
+                    value: "https://github.com/mojokb/onboard-mlops-model.git"
+                  - name: base_branch
+                    value: "train/2021-1120"
+                  - name: bucket_name
+                    # the value will get overridden by event payload from test-dep
+                    value: "torch-raw-images"
+                  - name: object_prefix
+                    # the value will get overridden by event payload from test-dep
+                    value: "20211128-163614/"
+                templates:
+                - name: verify-raw-data
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"  
+                  inputs:
+                    parameters:
+                    - name: object_prefix
+                  container:
+                    image: brightfly/verify-data:latest
+                    command: [python, verify_data.py]
+                    args: ["--raw_path=/workdir/{{inputs.parameters.object_prefix}}"]
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir                
+                - name: make-dataset
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  inputs:
+                    parameters:
+                    - name: object_prefix
+                  container:
+                    image: brightfly/make-dataset:latest
+                    command: [python, image_to_npz.py]
+                    args: ["--save_path=/workdir",
+                           "--image_path=/workdir/{{inputs.parameters.object_prefix}}",
+                           "--label_file_path=/workdir/{{inputs.parameters.object_prefix}}/labels.txt"]
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir                
+                - name: download-raw-data
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  inputs:
+                    parameters:
+                    - name: bucket_name
+                    - name: object_prefix
+                  container:
+                    image: brightfly/download-minio:latest
+                    command: [python, download_minio.py]
+                    args: ["--bucket_name={{inputs.parameters.bucket_name}}", 
+                           "--object_prefix={{inputs.parameters.object_prefix}}",
+                           "--download_path=/workdir"]
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
+                - name: gitdvc-template
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"    
+                  container:
+                    image: brightfly/workflow:git
+                    command: [sh, -c]
+                    args: ["git clone -b {{workflow.parameters.base_branch}} {{workflow.parameters.base_repo}} /workdir/repo && cd /workdir/repo && dvc pull"]
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
+                - name: test-model
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  inputs:
+                    parameters:
+                    - name: model_path 
+                  outputs:
+                    parameters:
+                    - name: f1_score	
+                      valueFrom:
+                        path: /tmp/result.txt	
+                  script:
+                    image: brightfly/workflow:bentoml.torch
+                    command: [python]
+                    source: |
+                      import sys
+                      sys.path.append("/workdir/repo")
+                      from src.models.test_model import TestModel
+                      test_model = TestModel(model_path="{{inputs.parameters.model_path}}",
+                                             dataset_path="/workdir/test_set.npz")
+                      f1_score = test_model.test()
+                      f = open('/tmp/result.txt', 'w')
+                      f.write(str(f1_score))
+                      print(f1_score)       
+                    workingDir: /workdir/repo  
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
+                - name: list-directory
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  container:
+                    image: alpine:latest
+                    command: [ls]
+                    args: ["-R", "/workdir"]
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
+                - name: get-f1-score-from-base     
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"  
+                  container:
+                    image: brightfly/get-label:latest
+                    command: [sh, -c]
+                    args: ["python find.py --service_name=onboard-mlops-model > /tmp/result.txt && cat /tmp/result.txt"]        
+                  outputs:
+                    parameters:
+                    - name: f1-score		# name of output parameter
+                      valueFrom:
+                        path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt  
+                - name: retrain-model
+                  inputs:
+                    parameters:
+                    - name: model_path 
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  script:
+                    image: brightfly/workflow:bentoml.torch
+                    command: [python]
+                    source: |
+                      import sys
+                      sys.path.append("/workdir/repo")
+                      from notebooks.torch_test import TrainModel
+                      retrain = TrainModel()
+                      retrain.load_model("{{inputs.parameters.model_path}}") 
+                      retrain.train(train_set="/workdir/train_set.npz", valid_set="/workdir/valid_set.npz", epochs=10, lr=0.01)
+                      retrain.save_model(save_model_path="/workdir")
+                      f1_score = retrain.test(test_set="/workdir/test_set.npz") 
+                      f = open('/tmp/result.txt', 'w')
+                      f.write(str(f1_score))
+                      print(f1_score)
+                    workingDir: /workdir/repo  
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
+                  outputs:
+                    parameters:
+                    - name: f1-score		# name of output parameter
+                      valueFrom:
+                        path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt  
+                - name: save-dataset-minio
+                  inputs:
+                    parameters:
+                    - name: bucket_name 
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  container:
+                    image: brightfly/upload-minio:latest
+                    command: [python, upload.py]
+                    args: ["--bucket_name={{inputs.parameters.bucket_name}}", "--dataset_path=/workdir", "--prefix={{workflow.parameters.object_prefix}}" ]
+                    volumeMounts:                     # same syntax as k8s Pod spec
+                    - name: workdir
+                      mountPath: /workdir
+                - name: retrain
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  dag:
+                    tasks: 
+                    - name: test-new-model
+                      template: test-model
+                      arguments:
+                        parameters: [{name: model_path, value: "/workdir/model.pt"}]                      
+                    - name: retrain-model
+                      template: retrain-model
+                      depends: test-new-model.Succeeded
+                      when: "{{tasks.test-new-model.outputs.result}} < 0.9"
+                      arguments:
+                        parameters: [{name: model_path, value: "/workdir/model.pt"}]                      
+                    - name: train-loop
+                      template: retrain
+                      depends: retrain-model.Succeeded
+                - name: model-repo-pull
+                  metadata:
+                    labels:
+                      should-be-deleted: "true"
+                  dag:
+                    tasks:
+                    - name: download-raw-data
+                      template: download-raw-data
+                      arguments:
+                        parameters: [{name: bucket_name, value: "{{workflow.parameters.bucket_name}}"},
+                                     {name: object_prefix, value: "{{workflow.parameters.object_prefix}}"}]
+                    - name: verify-raw-data
+                      template: verify-raw-data
+                      depends: download-raw-data.Succeeded
+                      arguments:
+                        parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}"}]                      
+                    - name: make-dataset
+                      template: make-dataset
+                      depends: verify-raw-data.Succeeded
+                      when: "{{tasks.verify-raw-data.outputs.result}} == Success"
+                      arguments:
+                        parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}"}]                      
+                    - name: gitdvc-pull            
+                      template: gitdvc-template
+                      depends: make-dataset.Succeeded
+                      when: "{{tasks.make-dataset.outputs.result}} == Success"
+                    - name: get-f1-score-from-base
+                      template: get-f1-score-from-base
+                      depends: make-dataset.Succeeded
+                      when: "{{tasks.make-dataset.outputs.result}} == Success"
+                    - name: test-base-model
+                      template: test-model
+                      depends: gitdvc-pull.Succeeded && get-f1-score-from-base.Succeeded
+                      arguments:
+                        parameters: [{name: model_path, value: "/workdir/repo/models/model.pt"}]                      
+                    - name: retrain-model-from-base
+                      template: retrain-model
+                      depends: test-base-model.Succeeded
+                      when: "{{tasks.test-base-model.outputs.result}} < {{tasks.get-f1-score-from-base.outputs.result}}"
+                      arguments:
+                        parameters: [{name: model_path, value: "/workdir/repo/models/model.pt"}]                      
+                    - name: put-dataset-queue
+                      when: "{{tasks.retrain-model-from-base.outputs.parameters.f1-score}} < 0.7"
+                      depends: retrain-model-from-base.Succeeded
+                      template: save-dataset-minio
+                      arguments:
+                        parameters: [{name: bucket_name, value: "torch-dataset-queue"}]                      
+                    - name: put-dataset
+                      when: "{{tasks.retrain-model-from-base.outputs.parameters.f1-score}} >= 0.7"
+                      depends: retrain-model-from-base.Succeeded
+                      template: save-dataset-minio
+                      arguments:
+                        parameters: [{name: bucket_name, value: "torch-dataset"}]                      
+                   #- name: retrain-model
+                    #  template: retrain
+                    #  depends: retrain-model-from-base.Succeeded
+                    #- name: list-workdir
+                    #  template: list-directory
+                    #  depends: retrain-model.Succeeded
+          parameters:
+            - src:
+                dependencyName: test-dep
+                dataTemplate: "{{ .Input.body.bucket_name }}"
+              dest: spec.arguments.parameters.2.value
+            - src:
+                dependencyName: test-dep
+                dataTemplate: "{{ .Input.body.object_prefix }}"
+              dest: spec.arguments.parameters.3.value
