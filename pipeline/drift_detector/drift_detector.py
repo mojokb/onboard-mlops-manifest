@@ -3,11 +3,11 @@ import torch
 import torchdrift
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from src.models.onboard_dataset import OnboardDataset
+from onboard_dataset import OnboardDataset
 
 
 class DriftDetector:
-    def __init__(self):
+    def __init__(self, p_value=0.01):
         self.feature_extractor = None
         self.train_dataloader = None
         self.input_dataloader = None
@@ -15,6 +15,7 @@ class DriftDetector:
         self.valid_path = None
         self.transform = None
         self.batch = 256
+        self.p_value = p_value
         self.drift_detector = torchdrift.detectors.KernelMMDDriftDetector()
 
     def _set_transform(self):
@@ -40,13 +41,14 @@ class DriftDetector:
         features = self.feature_extractor(inputs)
         score = self.drift_detector(features)
         p_val = self.drift_detector.compute_p_value(features)
-        print(score, p_val)
-        if p_val < 0.01:
-            print("Drifted Inputs")
+        if p_val < self.p_value:
+            print("drifted")
+        else:
+            print("good")
 
 
 if __name__ == "__main__":
-    detector = DriftDetector()
+    detector = DriftDetector(p_value=0.1)
     detector.set_feature_extractor(model_path="./model.pt")
     detector.set_dataloader(train_path="./data/processed/valid_set.npz",
                             input_path="./train_set.npz")

@@ -41,7 +41,7 @@ spec:
                   - name: base_repo
                     value: "https://github.com/mojokb/onboard-mlops-model.git"
                   - name: base_branch
-                    value: "train/2021-1120"
+                    value: "main"
                   - name: bucket_name
                     # the value will get overridden by event payload from test-dep
                     value: "torch-raw-images"

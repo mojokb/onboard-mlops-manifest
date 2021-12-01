@@ -5,27 +5,39 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 support_image = ['png', 'jpg']
+ignore_files = ['labels.txt']
+
 
 def image_label_to_npz(image_path=".",
-                       label_file_path=".labels.txt",
+                       label_file_path="labels.txt",
                        save_path="."):
     array_of_images = []
     labels = []
     file_list = os.listdir(image_path)
     file_list.sort()
-
+    filename_list = []
     for _, file in enumerate(file_list):
-        if file.split(".")[-1] in support_image:  # to check if file has a certain name
-            single_im = Image.open(os.path.join(image_path, file))
-            single_array = np.array(single_im)
-            array_of_images.append(single_array)
+        if file in ignore_files:
+            continue
+        if not file.split(".")[-1] in support_image:  # to check if file has a certain name
+            raise RuntimeError(f"not support file extension {file}")
+        filename_list.append(file)
+        single_array = np.array(Image.open(os.path.join(image_path, file)))
+        array_of_images.append(single_array)
 
     label_file = open(label_file_path, 'r')
+    label_dict = {}
     while True:
         line = label_file.readline()
         if not line:
             break
-        labels.append(line.split()[1])
+        label_file_name, label_label = line.split()
+        label_dict[label_file_name] = label_label
+
+    for filename in filename_list:
+        if not filename in label_dict.keys():
+            raise RuntimeError(f"not exists {filename} labels.txt")
+        labels.append(label_dict[filename])
 
     if len(array_of_images) != len(labels):
         raise RuntimeError(f'이미지({len(array_of_images)})랑 라벨({len(labels)})의 수가 맞지 않음')
