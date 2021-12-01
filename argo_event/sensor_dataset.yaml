@@ -269,7 +269,7 @@ spec:
                           ( {{tasks.verify-test-data.outputs.result}} == Success &&
                             {{tasks.verify-train-data.outputs.result}} == Success )
                       arguments:
-                        parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}"}]
+                        parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}"},
                                      {name: data_split, value: "{{workflow.parameters.data_split}}"}]
                     - name: gitdvc-pull
                       template: gitdvc-template
