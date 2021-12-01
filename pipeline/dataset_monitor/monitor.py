@@ -24,10 +24,11 @@ class MonitorMinio:
 
     def monitor(self):
         list = self.client.list_objects(bucket_name="torch-dataset")
+        dataset_list = []
         if list:
-            dataset_size = sum(1 for x in list)
-            if dataset_size >= 3:
-            # TODO have to triggering train
+            dataset_list = [x.object_name for x in list]
+            if len(dataset_list) >= 3:
+            # TODO have to triggering train , create branch
 
 
 if __name__ == "__main__":

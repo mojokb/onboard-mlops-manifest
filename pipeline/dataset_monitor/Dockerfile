@@ -1,5 +1,5 @@
 FROM python:3.8-slim
 RUN pip install minio
-COPY upload.py upload.py
+COPY monitor.py monitor.py
 
-CMD ["python", "upload.py"]
+CMD ["python", "monitor.py"]

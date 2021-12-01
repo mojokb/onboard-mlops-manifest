@@ -124,7 +124,7 @@ spec:
                       should-be-deleted: "true"
                   container:
                     image: brightfly/upload-minio:latest
-                    command: [python, upload.py]
+                    command: [python, monitor.py]
                     args: ["--bucket_name={{inputs.parameters.bucket_name}}", "--dataset_path=/workdir", "--prefix={{workflow.parameters.object_prefix}}" ]
                     volumeMounts:                     # same syntax as k8s Pod spec
                     - name: workdir
