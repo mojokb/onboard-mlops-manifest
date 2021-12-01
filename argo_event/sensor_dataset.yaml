@@ -247,19 +247,19 @@ spec:
                       depends: download-raw-data.Succeeded
                       arguments:
                         parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}/train"}]
-                      when: "{{workflow.parameters.object_prefix}} == train_test"
+                      when: "{{workflow.parameters.data_split}} == train_test"
                     - name: verify-test-data
                       template: verify-raw-data
                       depends: download-raw-data.Succeeded
                       arguments:
                         parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}/test"}]
-                      when: "{{workflow.parameters.object_prefix}} == train_test"
+                      when: "{{workflow.parameters.data_split}} == train_test"
                     - name: verify-split-none-data
                       template: verify-raw-data
                       depends: download-raw-data.Succeeded
                       arguments:
                         parameters: [{name: object_prefix, value: "{{workflow.parameters.object_prefix}}"}]
-                      when: "{{workflow.parameters.object_prefix}} == none"
+                      when: "{{workflow.parameters.data_split}} == none"
                     - name: make-dataset
                       template: make-dataset
                       depends: verify-split-none-data.Succeeded || verify-train-data.Succeeded && verify-test-data.Succeeded
