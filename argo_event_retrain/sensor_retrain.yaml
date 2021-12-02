@@ -45,8 +45,8 @@ spec:
                   - name: bucket_name
                     # the value will get overridden by event payload from test-dep
                     value: "torch-dataset"
-               templates:
-               - name: create-train-branch
+                templates:
+                - name: create-train-branch
                   metadata:
                     labels:
                       should-be-deleted: "true"    
@@ -58,7 +58,7 @@ spec:
                     volumeMounts:                     # same syntax as k8s Pod spec
                     - name: workdir
                       mountPath: /workdir
-               - name: list-directory
+                - name: list-directory
                   metadata:
                     labels:
                       should-be-deleted: "true"
