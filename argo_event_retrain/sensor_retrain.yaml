@@ -8,8 +8,8 @@ spec:
     serviceAccountName: operate-workflow-sa
   dependencies:
     - name: test-dep
-      eventSourceName: webhook-retrain
-      eventName: dataset
+      eventSourceName: retrain-webhook
+      eventName: batch_train
   triggers:
     - template:
         name: webhook-workflow-trigger
@@ -44,19 +44,17 @@ spec:
                     value: "main"
                   - name: bucket_name
                     # the value will get overridden by event payload from test-dep
-                    value: "torch-raw-images"
-                  - name: object_prefix
-                    # the value will get overridden by event payload from test-dep
-                    value: "20211128-163614/"
+                    value: "torch-dataset"
                 templates:
-               - name: gitdvc-template
+               - name: create-train-branch
                   metadata:
                     labels:
                       should-be-deleted: "true"    
                   container:
                     image: brightfly/workflow:git
                     command: [sh, -c]
-                    args: ["git clone -b {{workflow.parameters.base_branch}} {{workflow.parameters.base_repo}} /workdir/repo && cd /workdir/repo && dvc pull"]
+                    args: ["git clone {{workflow.parameters.base_repo}} /workdir && cd /workdir",
+                           "&& dvc pull && git chekcout -b retrain/{{workflow.creationTimestamp.%Y-%m%d-%f}}"]
                     volumeMounts:                     # same syntax as k8s Pod spec
                     - name: workdir
                       mountPath: /workdir
@@ -96,7 +94,7 @@ spec:
                     command: [python]
                     source: |
                       import sys
-                      sys.path.append("/workdir/repo")
+                      sys.path.append("/workdir")
                       from notebooks.torch_test import TrainModel
                       retrain = TrainModel()
                       retrain.load_model("{{inputs.parameters.model_path}}") 
@@ -106,7 +104,7 @@ spec:
                       f = open('/tmp/result.txt', 'w')
                       f.write(str(f1_score))
                       print(f1_score)
-                    workingDir: /workdir/repo  
+                    workingDir: /workdir
                     volumeMounts:                     # same syntax as k8s Pod spec
                     - name: workdir
                       mountPath: /workdir
@@ -115,51 +113,21 @@ spec:
                     - name: f1-score		# name of output parameter
                       valueFrom:
                         path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt  
-                - name: move-dataset-minio
-                  inputs:
-                    parameters:
-                    - name: bucket_name 
-                  metadata:
-                    labels:
-                      should-be-deleted: "true"
-                  container:
-                    image: brightfly/upload-minio:latest
-                    command: [python, monitor.py]
-                    args: ["--bucket_name={{inputs.parameters.bucket_name}}", "--dataset_path=/workdir", "--prefix={{workflow.parameters.object_prefix}}" ]
-                    volumeMounts:                     # same syntax as k8s Pod spec
-                    - name: workdir
-                      mountPath: /workdir
-               - name: retrain-pipeline
+              - name: retrain-pipeline
                   metadata:
                     labels:
                       should-be-deleted: "true"
                   dag:
                     tasks:
-                    - name: gitdvc-pull
-                      template: gitdvc-template
-                      depends: make-dataset.Succeeded
-                    - name: get-f1-score-from-base
-                      template: get-f1-score-from-base
-                      depends: make-dataset.Succeeded
+                    - name: create-train-branch
+                      template: create-train-branch
                    #  - name: pull-train-dataset
-                    - name: retrain-model-from-base
-                      template: retrain-model
-                      depends: test-base-model.Succeeded
-                      arguments:
-                        parameters: [{name: model_path, value: "/workdir/repo/models/model.pt"}]
+                   #  - name:
                    #  - name: create-branch
                    #  - name: push-pr
-                    - name: move-dataset-to-done
-                      depends: retrain-model-from-base.Succeeded
-                      template: move-dataset-minio
-                      arguments:
-                        parameters: [{name: bucket_name, value: "torch-dataset"}]                      
+                   # - name: move-dataset-to-done
           parameters:
             - src:
                 dependencyName: test-dep
                 dataTemplate: "{{ .Input.body.bucket_name }}"
               dest: spec.arguments.parameters.2.value
-            - src:
-                dependencyName: test-dep
-                dataTemplate: "{{ .Input.body.object_prefix }}"
-              dest: spec.arguments.parameters.3.value
