@@ -113,7 +113,7 @@ spec:
                     - name: f1-score		# name of output parameter
                       valueFrom:
                         path: /tmp/result.txt	# set the value of hello-param to the contents of this hello-world.txt  
-              - name: retrain-pipeline
+                - name: retrain-pipeline
                   metadata:
                     labels:
                       should-be-deleted: "true"
