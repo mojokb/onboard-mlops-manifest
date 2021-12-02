@@ -51,14 +51,17 @@ class DownloadMinio:
         logger.info(f"{total} download")
 
 
-if __name__ == "__main__":
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--bucket_name', type=str, default="torch-raw-images", help='--bucket_name=torch-raw-images')
     parser.add_argument('--object_prefix', type=str, default="20211128-163614/", help='--object_prefix=20211128-163614/')
     parser.add_argument('--download_path', type=str, default="./workdir", help='--download_path=./workdir')
     parser.add_argument('--data_split', type=str, default="none", help='--data_split=[none|train_test]')
-    args = parser.parse_args()
+    return parser.parse_args()
 
+
+if __name__ == "__main__":
+    args = parse_args()
     download_minio = DownloadMinio(bucket_name=args.bucket_name,
                                    object_prefix=args.object_prefix,
                                    data_split=args.data_split,

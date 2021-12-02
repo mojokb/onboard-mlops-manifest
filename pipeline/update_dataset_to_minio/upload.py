@@ -30,11 +30,15 @@ class UploadMinio:
                 file_path=os.path.join(dataset_path, file))
 
 
-if __name__ == "__main__":
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--bucket_name', type=str, default="torch-dataset-queue")
     parser.add_argument('--dataset_path', type=str, default="/workdir")
     parser.add_argument('--prefix', type=str, default="12345/")
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_args()
     onboard_minio = UploadMinio(bucket_name=args.bucket_name)
     onboard_minio.upload(args.dataset_path, args.prefix)

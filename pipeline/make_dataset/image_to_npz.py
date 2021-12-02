@@ -62,13 +62,15 @@ def image_label_to_npz(image_path=".",
         np.savez(os.path.join(save_path, "test_set.npz"), x=array_of_images, y=labels)
 
 
-
-if __name__ == "__main__":
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_path', type=str, default="/workdir", help='--image_path=/workdir')
     parser.add_argument('--save_path', type=str, default="/workdir", help="--save_path=./workdir")
     parser.add_argument('--data_split', type=str, default="/workdir", help="--data_split=[none|train_test]")
-    args = parser.parse_args()
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parse_args()
 
     if args.data_split == 'none':
         image_label_to_npz(image_path=args.image_path,
